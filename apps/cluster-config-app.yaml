@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/chriwo42-lang/ocp-gitops-bootstrap.git
+    repoURL: https://github.com/chriwo42-lang/ocp-platform.git
     targetRevision: main
     path: cluster-config
   destination:
