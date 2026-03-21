@@ -8,13 +8,14 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/chriwo42-lang/ocp-platform.git
+    repoURL: https://github.com/<dein-user>/ocp-platform.git
     targetRevision: main
     path: cluster-config
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: openshift-gitops
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
