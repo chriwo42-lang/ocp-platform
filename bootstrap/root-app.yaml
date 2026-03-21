@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/<dein-user>/ocp-gitops-bootstrap.git
+    repoURL: https://github.com/chriwo42-lang/ocp-gitops-bootstrap.git
     targetRevision: main
     path: apps
   destination:
