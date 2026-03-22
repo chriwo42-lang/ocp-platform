@@ -1,6 +1,9 @@
 # 0. installPlanApproval
 in git bei den operator subscriptions auf automatic setzen
 
+# autosync enablen
+in den apps in git
+
 # 1. GitOps Operator installieren
 oc apply -f ... <- files aus dem git operators ordner
 
@@ -25,7 +28,7 @@ oc adm groups add-users cluster-admins admin
 in git bei den operator subscriptions auf manual setzen
 
 # autosync disablen
-in den apps
+in den apps in git
 
 # kubeadmin entfernen???
 oc delete secret kubeadmin -n kube-system
