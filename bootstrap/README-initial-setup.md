@@ -23,6 +23,26 @@ oc apply -f bootstrap/root-app.yaml
 oc adm groups new cluster-admins
 oc adm groups add-users cluster-admins admin
 
+# vault
+oc exec -it vault-0 -n vault -- vault operator init
+oc exec -it vault-0 -n vault -- vault operator unseal <key1>
+oc exec -it vault-0 -n vault -- vault operator unseal <key2>
+oc exec -it vault-0 -n vault -- vault operator unseal <key3>
+
+oc exec -it vault-0 -n vault -- vault login <root-token>
+oc exec -it vault-0 -n vault -- vault secrets enable -path=secret kv-v2
+
+oc exec -it vault-0 -n vault -- /bin/sh
+cat > /tmp/eso-policy.hcl << 'EOF'
+> path "secret/*" {
+>   capabilities = ["read", "list"]
+> }
+> EOF
+
+vault policy write eso-policy /tmp/eso-policy.hcl
+
+oc exec -it vault-0 -n vault -- vault token create -policy=eso-policy -period=768h
+
 # installPlanApproval
 in git bei den operator subscriptions auf manual setzen
 
