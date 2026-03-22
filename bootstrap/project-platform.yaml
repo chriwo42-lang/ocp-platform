@@ -7,6 +7,7 @@ spec:
   description: Platform Team - Cluster Konfiguration
   sourceRepos:
     - https://github.com/chriwo42-lang/ocp-platform.git
+    - https://helm.releases.hashicorp.com
   destinations:
     - server: https://kubernetes.default.svc
       namespace: '*'
