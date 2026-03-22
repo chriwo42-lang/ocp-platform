@@ -16,6 +16,9 @@ spec:
         global:
           openshift: true
         server:
+          image:
+            repository: docker.io/hashicorp/vault
+            tag: 1.21.2
           dev:
             enabled: false
           standalone:
@@ -27,6 +30,11 @@ spec:
             limits:
               memory: 512Mi
               cpu: 500m
+        injector:
+          image:
+            repository: docker.io/hashicorp/vault-k8s
+          agentImage:
+            repository: docker.io/hashicorp/vault
   destination:
     server: https://kubernetes.default.svc
     namespace: vault
