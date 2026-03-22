@@ -36,4 +36,8 @@ spec:
           agentImage:
             repository: docker.io/hashicorp/vault
   destination:
-    server: ht
+    server: https://kubernetes.default.svc
+    namespace: vault
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
