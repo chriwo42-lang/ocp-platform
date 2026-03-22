@@ -1,1 +1,1 @@
-# ocp-gitops-bootstrap
+# ocp-platform
