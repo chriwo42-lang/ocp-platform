@@ -8,17 +8,13 @@ spec:
   title: OCP4 Moderate Tailored
   extends: ocp4-moderate
   disableRules:
-    # HTPasswd wird bewusst verwendet
-    - name: ocp4-moderate-ocp-idp-no-htpasswd
+    - name: ocp4-ocp-idp-no-htpasswd
       rationale: "HTPasswd wird als einziger IDP verwendet"
-    # Kein Proxy in CRC
-    - name: ocp4-moderate-cluster-wide-proxy-set
+    - name: ocp4-cluster-wide-proxy-set
       rationale: "Kein Proxy in CRC/lokaler Umgebung"
-    # FIPS nicht möglich in CRC
-    - name: ocp4-moderate-fips-mode-enabled-on-all-nodes
+    - name: ocp4-fips-mode-enabled-on-all-nodes
       rationale: "FIPS wird von CRC nicht unterstützt"
-    # Kein externes Log-System
-    - name: ocp4-moderate-audit-log-forwarding-enabled
+    - name: ocp4-audit-log-forwarding-enabled
       rationale: "Kein externes Log-System vorhanden"
-    - name: ocp4-moderate-audit-log-forwarding-uses-tls
+    - name: ocp4-audit-log-forwarding-uses-tls
       rationale: "Kein externes Log-System vorhanden"
