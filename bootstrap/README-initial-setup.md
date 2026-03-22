@@ -1,24 +1,16 @@
-# installPlanApproval
+# 0. installPlanApproval
 in git bei den operator subscriptions auf automatic setzen
 
 # 1. GitOps Operator installieren
+oc apply -f ... <- files aus dem git operators ordner
 
 # 2. GitHub Repo-Secret für ArgoCD
-oc create secret generic ocp-gitops-bootstrap-repo \
-  --namespace=openshift-gitops \
-  --from-literal=type=git \
-  --from-literal=url=https://github.com/<user>/ocp-gitops-bootstrap.git \
-  --from-literal=username=<github-user> \
-  --from-literal=password=<PAT>
+oc create secret generic ocp-platform-repo --namespace=openshift-gitops --from-literal=type=git   --from-literal=url=https://github.com/chriwo42-lang/ocp-platform.git --from-literal=username=chriwo42-lang  --from-literal=password=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
 
-oc label secret ocp-gitops-bootstrap-repo \
-  -n openshift-gitops \
-  argocd.argoproj.io/secret-type=repository
+oc label secret ocp-platform-repo -n openshift-gitops argocd.argoproj.io/secret-type=repository
 
 # 3. HTPasswd Secret
-oc create secret generic htpasswd-secret \
-  --from-literal=htpasswd='admin:<bcrypt-hash>' \
-  -n openshift-config
+oc create secret generic htpasswd-secret --from-literal=htpasswd='admin:$2a$12$u5tzoqjBFxHmviyVzkMOp.zXpagO9rD19APwEkMgbZB/3dX/OLTRG' -n openshift-config
 
 # 4. Root-App 
 oc apply -f .\project-platform.yaml
@@ -28,25 +20,6 @@ oc apply -f bootstrap/root-app.yaml
 oc adm groups new cluster-admins
 oc adm groups add-users cluster-admins admin
 
-# vault init
-oc exec -it vault-0 -n vault -- vault operator init
-keys speichern!!!
-oc exec -it vault-0 -n vault -- vault operator unseal <unseal-key-1>
-oc exec -it vault-0 -n vault -- vault operator unseal <unseal-key-2>
-oc exec -it vault-0 -n vault -- vault operator unseal <unseal-key-3>
-
-# eso mit vault verbinden
-oc exec -it vault-0 -n vault -- vault login <root-token>
-
-oc exec -it vault-0 -n vault -- vault policy write eso-policy - 
-path "secret/*" {
-  capabilities = ["read", "list"]
-}
-
-oc exec -it vault-0 -n vault -- vault token create -policy=eso-policy -period=768h
-oc create secret generic vault-token -n external-secrets --from-literal=token=hvs.CAESIA-pWvEmsluFzx_Q1BxuJ-6gy0Ao2ofB7B4G3bEPfXaIGh4
-
-oc exec -it vault-0 -n vault -- vault secrets enable -path=secret kv-v2
 
 # 6. installPlanApproval
 in git bei den operator subscriptions auf manual setzen
