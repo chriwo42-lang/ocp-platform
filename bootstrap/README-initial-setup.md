@@ -37,7 +37,12 @@ oc exec -it vault-0 -n vault -- vault operator unseal <unseal-key-3>
 
 # eso mit vault verbinden
 oc exec -it vault-0 -n vault -- vault login <root-token>
-oc exec -it vault-0 -n vault -- vault policy write eso-policy path "secret/*" { capabilities = ["read", "list"] }
+
+oc exec -it vault-0 -n vault -- vault policy write eso-policy - 
+path "secret/*" {
+  capabilities = ["read", "list"]
+}
+
 oc exec -it vault-0 -n vault -- vault token create -policy=eso-policy -period=768h
 oc create secret generic vault-token -n openshift-external-secrets-operator --from-literal=token=<vault-token>
 
