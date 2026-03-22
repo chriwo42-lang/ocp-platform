@@ -1,3 +1,6 @@
+# installPlanApproval
+in git bei den operator subscriptions auf automatic setzen
+
 # 1. GitOps Operator installieren
 
 # 2. GitHub Repo-Secret für ArgoCD
@@ -24,3 +27,6 @@ oc apply -f bootstrap/root-app.yaml
 # 5. Admin zur cluster-admins Gruppe hinzufügen
 oc adm groups new cluster-admins
 oc adm groups add-users cluster-admins admin
+
+# 6. installPlanApproval
+in git bei den operator subscriptions auf manual setzen
