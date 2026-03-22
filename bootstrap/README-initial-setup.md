@@ -44,7 +44,9 @@ path "secret/*" {
 }
 
 oc exec -it vault-0 -n vault -- vault token create -policy=eso-policy -period=768h
-oc create secret generic vault-token -n openshift-external-secrets-operator --from-literal=token=<vault-token>
+oc create secret generic vault-token -n external-secrets --from-literal=token=hvs.CAESIA-pWvEmsluFzx_Q1BxuJ-6gy0Ao2ofB7B4G3bEPfXaIGh4
+
+oc exec -it vault-0 -n vault -- vault secrets enable -path=secret kv-v2
 
 # 6. installPlanApproval
 in git bei den operator subscriptions auf manual setzen
