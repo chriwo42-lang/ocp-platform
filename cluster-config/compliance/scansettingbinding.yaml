@@ -4,11 +4,11 @@ metadata:
   name: moderate
   namespace: openshift-compliance
 profiles:
-  - name: ocp4-moderate
-    kind: Profile
+  - name: ocp4-moderate-tailored
+    kind: TailoredProfile
     apiGroup: compliance.openshift.io/v1alpha1
-  - name: rhcos4-moderate
-    kind: Profile
+  - name: rhcos4-moderate-tailored
+    kind: TailoredProfile
     apiGroup: compliance.openshift.io/v1alpha1
 settingsRef:
   name: default
