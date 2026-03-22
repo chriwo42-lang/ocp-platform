@@ -4,7 +4,7 @@ metadata:
   name: root-app
   namespace: openshift-gitops
 spec:
-  project: default
+  project: platform
   source:
     repoURL: https://github.com/chriwo42-lang/ocp-platform.git
     targetRevision: main
@@ -13,6 +13,5 @@ spec:
     server: https://kubernetes.default.svc
     namespace: openshift-gitops
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
