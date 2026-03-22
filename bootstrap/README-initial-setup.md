@@ -28,6 +28,13 @@ oc apply -f bootstrap/root-app.yaml
 oc adm groups new cluster-admins
 oc adm groups add-users cluster-admins admin
 
+# vault init
+oc exec -it vault-0 -n vault -- vault operator init
+keys speichern!!!
+oc exec -it vault-0 -n vault -- vault operator unseal <unseal-key-1>
+oc exec -it vault-0 -n vault -- vault operator unseal <unseal-key-2>
+oc exec -it vault-0 -n vault -- vault operator unseal <unseal-key-3>
+
 # 6. installPlanApproval
 in git bei den operator subscriptions auf manual setzen
 
