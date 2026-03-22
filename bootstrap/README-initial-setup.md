@@ -30,3 +30,6 @@ oc adm groups add-users cluster-admins admin
 
 # 6. installPlanApproval
 in git bei den operator subscriptions auf manual setzen
+
+# kubeadmin entfernen???
+oc delete secret kubeadmin -n kube-system
