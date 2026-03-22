@@ -17,7 +17,8 @@ oc create secret generic htpasswd-secret \
   --from-literal=htpasswd='admin:<bcrypt-hash>' \
   -n openshift-config
 
-# 4. Root-App anwenden
+# 4. Root-App 
+oc apply -f .\project-platform.yaml
 oc apply -f bootstrap/root-app.yaml
 
 # 5. Admin zur cluster-admins Gruppe hinzufügen
