@@ -3,15 +3,14 @@ kind: ScanSettingBinding
 metadata:
   name: moderate
   namespace: openshift-compliance
-spec:
-  profiles:
-    - name: ocp4-moderate
-      kind: Profile
-      apiGroup: compliance.openshift.io/v1alpha1
-    - name: rhcos4-moderate
-      kind: Profile
-      apiGroup: compliance.openshift.io/v1alpha1
-  settingsRef:
-    name: default
-    kind: ScanSetting
+profiles:
+  - name: ocp4-moderate
+    kind: Profile
     apiGroup: compliance.openshift.io/v1alpha1
+  - name: rhcos4-moderate
+    kind: Profile
+    apiGroup: compliance.openshift.io/v1alpha1
+settingsRef:
+  name: default
+  kind: ScanSetting
+  apiGroup: compliance.openshift.io/v1alpha1
