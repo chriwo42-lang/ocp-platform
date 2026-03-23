@@ -10,6 +10,7 @@ spec:
     - domainName: quay.io
     - domainName: docker.io
     - domainName: image-registry.openshift-image-registry.svc:5000
+    - domainName: quay.io/openshift-release-dev
   registrySources:
     allowedRegistries:
       - registry.redhat.io
@@ -18,3 +19,4 @@ spec:
       - quay.io
       - docker.io
       - image-registry.openshift-image-registry.svc:5000
+      - quay.io/openshift-release-dev
