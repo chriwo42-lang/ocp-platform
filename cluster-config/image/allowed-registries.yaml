@@ -1,0 +1,20 @@
+apiVersion: config.openshift.io/v1
+kind: Image
+metadata:
+  name: cluster
+spec:
+  allowedRegistries:
+    - domainName: registry.redhat.io
+    - domainName: registry.access.redhat.com
+    - domainName: registry.connect.redhat.com
+    - domainName: quay.io
+    - domainName: docker.io
+    - domainName: image-registry.openshift-image-registry.svc:5000
+  registrySources:
+    allowedRegistries:
+      - registry.redhat.io
+      - registry.access.redhat.com
+      - registry.connect.redhat.com
+      - quay.io
+      - docker.io
+      - image-registry.openshift-image-registry.svc:5000
