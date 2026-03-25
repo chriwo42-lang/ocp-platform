@@ -28,3 +28,4 @@ spec:
             - vault
             - cert-manager-operator
             - openshift-marketplace
+            - openshift-operator-lifecycle-manager
