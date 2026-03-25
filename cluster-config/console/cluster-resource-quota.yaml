@@ -27,3 +27,4 @@ spec:
             - external-secrets
             - vault
             - cert-manager-operator
+            - openshift-marketplace
