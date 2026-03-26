@@ -8,6 +8,9 @@ in den apps in git
 oc apply -f ... <- files aus dem ordner operators/openshift-gitops-operator
 
 # GitHub Repo-Secret für ArgoCD
+
+ACHTUNG: Repo ist derzeit public!!!
+
 oc create secret generic ocp-platform-repo --namespace=openshift-gitops --from-literal=type=git   --from-literal=url=https://github.com/chriwo42-lang/ocp-platform.git --from-literal=username=chriwo42-lang  --from-literal=password=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
 
 oc label secret ocp-platform-repo -n openshift-gitops argocd.argoproj.io/secret-type=repository
