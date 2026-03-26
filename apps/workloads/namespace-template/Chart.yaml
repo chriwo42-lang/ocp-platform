@@ -1,0 +1,4 @@
+apiVersion: v2
+name: namespace-template
+description: Standard Policies für App-Namespaces
+version: 0.1.0
