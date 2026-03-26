@@ -4,7 +4,7 @@ metadata:
   name: workloads
   namespace: openshift-gitops
   annotations:
-    argocd.argoproj.io/sync-wave: "-1" 
+    argocd.argoproj.io/sync-wave: "2" 
 spec:
   description: Workloads - Applikationen
   sourceRepos:
