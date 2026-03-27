@@ -1,9 +1,0 @@
-apiVersion: console.openshift.io/v1
-kind: ConsoleNotification
-metadata:
-  name: classification-banner
-spec:
-  text: "WARNUNG: Autorisierter Zugriff nur für berechtigte Benutzer. Alle Aktivitäten werden protokolliert und überwacht."
-  location: BannerTop
-  color: "#FFFFFF"
-  backgroundColor: "#C9190B"

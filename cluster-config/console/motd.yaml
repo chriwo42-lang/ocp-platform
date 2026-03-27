@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: motd
-  namespace: openshift
-data:
-  message: |
-    Autorisierter Zugriff nur für berechtigte Benutzer.
-    Alle Aktivitäten werden protokolliert und überwacht.
