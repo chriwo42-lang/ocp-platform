@@ -21,6 +21,7 @@ oc adm groups new cluster-admins (TODO: wirklich nötig? prüfen ob gruppe nicht
 oc adm groups add-users cluster-admins admin
 
 # Root-App 
+prüfen, ob argo läuft
 oc apply -f .\project-platform.yaml
 oc apply -f bootstrap/root-app.yaml
 
