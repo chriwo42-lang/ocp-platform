@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1beta1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: openshift-gitops
+spec:
+  description: Platform Team – Cluster-weite Konfiguration und GitOps-Infrastruktur
+  sourceRepos:
+    - https://github.com/chriwo42-lang/ocp-platform.git
+    - https://github.com/chriwo42-lang/ocp-workloads.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: '*'
+    # Cluster-Scope für Ressourcen ohne Namespace (Group, ClusterRoleBinding, ...)
+    - server: https://kubernetes.default.svc
+      namespace: ''
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  roles:
+    - name: platform-admin
+      description: Vollzugriff auf alle Platform-Apps
+      policies:
+        - p, proj:platform:platform-admin, applications, *, platform/*, allow
+      groups:
+        - cluster-admins
