@@ -11,14 +11,14 @@ Verwaltet vom **Platform Team**.
 ocp-platform/               ← dieses Repo (Platform Team)
   bootstrap/                ← einmalig manuell ausführen
   apps/                     ← Child-Apps, von ArgoCD verwaltet
-  cluster-config/           ← cluster-weite Konfiguration (Gruppen, ...)
+  cluster-config/           ← cluster-weite Konfiguration, von ArgoCD verwaltet
 
 ocp-workloads/              ← Workloads-Repo (Platform Team)
-  charts/namespace-config/  ← Helm Library Chart für Namespace-Konfiguration
+  charts/namespace-config/  ← Helm Chart für Namespace-Konfiguration
   apps/<project>/           ← je Projekt: AppProject, Gruppen, App-Referenzen
 
 <app-repo>/                 ← je App ein eigenes Repo (Entwickler-Team)
-  helm/ oder manifests/
+  helm/
 ```
 
 ---
@@ -27,17 +27,26 @@ ocp-workloads/              ← Workloads-Repo (Platform Team)
 
 ```
 platform-app  (Root App-of-Apps, Bootstrap)
-├── cluster-config  ──────────→ cluster-config/          Wave 0
-│   └── groups/
-│       └── cluster-admins.yaml
+├── cluster-config  ──────────→ cluster-config/               Wave -1
+│   ├── argocd/
+│   │   └── argocd-rbac-cm.yaml      ArgoCD RBAC (von ArgoCD verwaltet)
+│   ├── groups/
+│   │   └── cluster-admins.yaml
+│   ├── oauth/
+│   │   └── oauth.yaml               OAuth (von ArgoCD verwaltet)
+│   └── rbac/
+│       └── argocd-cluster-admin.yaml
 │
-└── workloads-app  ───────────→ ocp-workloads/apps/      Wave 0
+└── workloads-app  ───────────→ ocp-workloads/apps/           Wave 0
     └── project-a/
-        ├── appproject.yaml                              Wave -1
-        ├── groups.yaml                                  Wave  0
-        └── my-app/
-            ├── namespace-config-app.yaml               Wave  0
-            └── my-app-app.yaml                         Wave  1
+        ├── appproject.yaml                                   Wave -1
+        ├── groups.yaml                                       Wave -1
+        ├── my-app/
+        │   ├── namespace-config-app.yaml                     Wave  0
+        │   └── my-app-app.yaml                               Wave  1
+        └── your-app/
+            ├── namespace-config-app.yaml                     Wave  0
+            └── your-app-app.yaml                             Wave  1
 ```
 
 ---
@@ -51,59 +60,68 @@ ocp-platform/
 │   │   ├── namespace.yaml
 │   │   ├── operatorgroup.yaml
 │   │   └── subscription.yaml
-│   ├── argocd-rbac-cm.yaml        ArgoCD RBAC: cluster-admins → ArgoCD admin
-│   ├── platform-project.yaml      AppProject "platform"
-│   ├── platform-app.yaml          Root App-of-Apps
-│   └── README-bootstrap.md        Schritt-für-Schritt Bootstrap-Anleitung
+│   ├── argocd-rbac-cm.yaml    ← nur Bootstrap (danach via cluster-config verwaltet)
+│   ├── oauth.yaml             ← nur Bootstrap (danach via cluster-config verwaltet)
+│   ├── platform-project.yaml  AppProject "platform"
+│   ├── platform-app.yaml      Root App-of-Apps
+│   └── README-bootstrap.md    Schritt-für-Schritt Bootstrap-Anleitung
 ├── apps/
-│   ├── cluster-config-app.yaml    Child-App → cluster-config/
-│   └── workloads-app.yaml         Child-App → ocp-workloads/apps/
+│   ├── cluster-config-app.yaml    Wave -1 → cluster-config/
+│   └── workloads-app.yaml         Wave  0 → ocp-workloads/apps/
 └── cluster-config/
-    └── groups/
-        └── cluster-admins.yaml    Gruppe cluster-admins (platform-weite Admins)
+    ├── argocd/
+    │   └── argocd-rbac-cm.yaml    ArgoCD RBAC: cluster-admins → ArgoCD admin
+    ├── groups/
+    │   └── cluster-admins.yaml    Gruppe cluster-admins
+    ├── oauth/
+    │   └── oauth.yaml             HTPasswd Identity Provider
+    └── rbac/
+        └── argocd-cluster-admin.yaml  ClusterRoleBinding für ArgoCD
 ```
 
 ---
 
 ## User- und Gruppen-Management
 
-### Konzept
-
 | Was | Wo | Wer |
 |---|---|---|
 | Cluster-weite Gruppen (z.B. `cluster-admins`) | `cluster-config/groups/` | Platform Team |
 | Projekt-Gruppen (z.B. `project-a-admins`) | `ocp-workloads/apps/<project>/groups.yaml` | Platform Team |
-| Passwörter / HTPasswd-Hashes | **nicht in Git** – manueller Bootstrap-Schritt | Platform Team |
+| Passwörter / HTPasswd-Hashes | **nicht in Git** – manueller Schritt | Platform Team |
 | User-Objekte | entstehen automatisch beim ersten Login | — |
 
 ### Neuen Platform-Admin hinzufügen
 
-```bash
-# cluster-config/groups/cluster-admins.yaml editieren:
+**1. User in Git zur Gruppe hinzufügen** (`cluster-config/groups/cluster-admins.yaml`):
+
+```yaml
 users:
   - admin
-  - neuer-admin    # hinzufügen
-
-git add . && git commit -m "feat(groups): add neuer-admin to cluster-admins" && git push
+  - neuer-admin
 ```
 
-Passwort für den neuen User manuell im HTPasswd-Secret ergänzen:
+```powershell
+git add . && git commit -m "feat(groups): add neuer-admin to cluster-admins"
+git push
+```
 
-```bash
-# Bestehenden Hash auslesen
-oc get secret htpasswd-secret -n openshift-config \
-  -o jsonpath='{.data.htpasswd}' | base64 -d > /tmp/htpasswd
+**2. Passwort manuell im HTPasswd-Secret ergänzen:**
 
-# Neuen User hinzufügen (htpasswd CLI oder bcrypt-generator.com)
-htpasswd /tmp/htpasswd neuer-admin
+```powershell
+oc get secret htpasswd-secret -n openshift-config `
+  -o jsonpath='{.data.htpasswd}' | `
+  [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) | `
+  Out-File -FilePath "$env:TEMP\htpasswd" -Encoding utf8NoBOM
 
-# Secret aktualisieren
-oc create secret generic htpasswd-secret \
-  --from-file=htpasswd=/tmp/htpasswd \
-  -n openshift-config \
+# Hash generieren: https://bcrypt-generator.com (Rounds 10)
+Add-Content "$env:TEMP\htpasswd" 'neuer-admin:$2a$10$HASH_HIER'
+
+oc create secret generic htpasswd-secret `
+  --from-file=htpasswd="$env:TEMP\htpasswd" `
+  -n openshift-config `
   --dry-run=client -o yaml | oc apply -f -
 
-rm /tmp/htpasswd
+Remove-Item "$env:TEMP\htpasswd"
 ```
 
 ---

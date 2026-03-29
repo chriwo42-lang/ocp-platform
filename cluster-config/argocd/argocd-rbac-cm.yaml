@@ -3,10 +3,12 @@ kind: ConfigMap
 metadata:
   name: argocd-rbac-cm
   namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 data:
+  # Mitglieder der Gruppe "cluster-admins" bekommen ArgoCD admin-Rolle
+  # "admin" User wird im Bootstrap zur Gruppe hinzugefügt
   policy.csv: |
     g, cluster-admins, role:admin
   policy.default: role:readonly
   scopes: '[groups]'
-# HINWEIS: Diese Datei wird nur einmalig im Bootstrap (Schritt 5) angewendet.
-# Die eigentliche Verwaltung erfolgt durch ArgoCD via cluster-config/argocd/argocd-rbac-cm.yaml

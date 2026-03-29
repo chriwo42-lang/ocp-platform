@@ -44,6 +44,8 @@ oc apply -f bootstrap\oauth.yaml
 oc rollout status deployment/oauth-openshift -n openshift-authentication --timeout=120s
 ```
 
+> Danach wird `oauth.yaml` von ArgoCD via `cluster-config/oauth/oauth.yaml` verwaltet.
+
 ---
 
 ## Schritt 4 – Admin-User temporär einrichten
@@ -72,11 +74,22 @@ oc whoami   # muss "admin" zurückgeben
 oc apply -f bootstrap\argocd-rbac-cm.yaml
 ```
 
-Mappt die Gruppe `cluster-admins` auf die ArgoCD admin-Rolle.
+> Danach wird die ConfigMap von ArgoCD via `cluster-config/argocd/argocd-rbac-cm.yaml` verwaltet.
 
 ---
 
-## Schritt 6 – AppProject "platform" anlegen
+## Schritt 6 – ArgoCD cluster-admin Berechtigung setzen
+
+ArgoCD benötigt cluster-admin um Ressourcen in allen Namespaces verwalten zu können.  
+Zugriffskontrolle erfolgt über AppProjects — nicht über dieses ClusterRoleBinding direkt.
+
+```powershell
+oc apply -f cluster-config\rbac\argocd-cluster-admin.yaml
+```
+
+---
+
+## Schritt 7 – AppProject "platform" anlegen
 
 ```powershell
 oc apply -f bootstrap\platform-project.yaml
@@ -84,7 +97,7 @@ oc apply -f bootstrap\platform-project.yaml
 
 ---
 
-## Schritt 7 – Root App-of-Apps anlegen
+## Schritt 8 – Root App-of-Apps anlegen
 
 ```powershell
 oc apply -f bootstrap\platform-app.yaml
@@ -94,22 +107,25 @@ Ab hier übernimmt ArgoCD. Alle weiteren Änderungen erfolgen **ausschließlich 
 
 ---
 
-## Schritt 8 – ArgoCD Sync abwarten
+## Schritt 9 – ArgoCD Sync abwarten
 
 ArgoCD deployt nun automatisch alle Child-Apps in der richtigen Reihenfolge:
 
-| Wave | App | Was wird deployt |
+| Wave | App / Ressource | Was wird deployt |
 |---|---|---|
-| 0 | `cluster-config` | Gruppe `cluster-admins` aus Git |
-| 0 | `workloads-app` | AppProjects, Gruppen, Namespace-Config, Apps |
+| -1 | `cluster-config` | ArgoCD RBAC, OAuth, `cluster-admins` Gruppe, ArgoCD ClusterRoleBinding |
+| -1 | `project-a` AppProject | AppProject für project-a |
+| -1 | `project-a` Gruppen | `project-a-admins`, `project-a-developers` |
+| 0 | `workloads-app` | Namespace-Config Apps für my-app und your-app |
+| 1 | App-of-Apps | Eigentliche Workloads (my-app, your-app) |
 
-ArgoCD URL aufrufen:
+ArgoCD UI aufrufen:
 
 ```powershell
 oc get route openshift-gitops-server -n openshift-gitops -o jsonpath='{.spec.host}'
 ```
 
-Login mit `admin` / `<dein-passwort>` in der ArgoCD UI.
+Login mit `admin` / `<dein-passwort>`.
 
 Folgende Apps müssen `Synced / Healthy` sein:
 
@@ -118,6 +134,10 @@ Folgende Apps müssen `Synced / Healthy` sein:
 | `platform-app` | ocp-platform/apps/ |
 | `cluster-config` | ocp-platform/cluster-config/ |
 | `workloads-app` | ocp-workloads/apps/ |
+| `project-a-my-app-namespace` | ocp-workloads charts/namespace-config |
+| `project-a-my-app` | my-app/helm |
+| `project-a-your-app-namespace` | ocp-workloads charts/namespace-config |
+| `project-a-your-app` | your-app/helm |
 
 ---
 
@@ -131,20 +151,22 @@ users:
   - neuer-user
 ```
 
-**2. Passwort manuell im Secret ergänzen (PowerShell):**
+```powershell
+git add . && git commit -m "feat(project-a): add neuer-user"
+git push
+```
+
+**2. Passwort manuell im Secret ergänzen:**
 
 ```powershell
-# Bestehenden Hash auslesen
 oc get secret htpasswd-secret -n openshift-config `
   -o jsonpath='{.data.htpasswd}' | `
   [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) | `
   Out-File -FilePath "$env:TEMP\htpasswd" -Encoding utf8NoBOM
 
-# Neuen Eintrag manuell anhängen (Hash von https://bcrypt-generator.com):
-# Format: username:$2a$10$HASH
-Add-Content "$env:TEMP\htpasswd" "neuer-user:`$2a`$10`$HASH_HIER"
+# Hash generieren: https://bcrypt-generator.com (Rounds 10)
+Add-Content "$env:TEMP\htpasswd" 'neuer-user:$2a$10$HASH_HIER'
 
-# Secret aktualisieren
 oc create secret generic htpasswd-secret `
   --from-file=htpasswd="$env:TEMP\htpasswd" `
   -n openshift-config `
@@ -162,6 +184,12 @@ Remove-Item "$env:TEMP\htpasswd"
 ```powershell
 oc apply -f bootstrap\argocd-rbac-cm.yaml
 oc rollout restart deployment/openshift-gitops-server -n openshift-gitops
+```
+
+**Apps zeigen "forbidden" Fehler:**
+
+```powershell
+oc apply -f cluster-config\rbac\argocd-cluster-admin.yaml
 ```
 
 **OAuth funktioniert nicht — Hash prüfen:**
