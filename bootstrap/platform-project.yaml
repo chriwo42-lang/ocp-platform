@@ -1,4 +1,4 @@
-apiVersion: argoproj.io/v1beta1
+apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
   name: platform
@@ -11,7 +11,6 @@ spec:
   destinations:
     - server: https://kubernetes.default.svc
       namespace: '*'
-    # Cluster-Scope für Ressourcen ohne Namespace (Group, ClusterRoleBinding, ...)
     - server: https://kubernetes.default.svc
       namespace: ''
   clusterResourceWhitelist:

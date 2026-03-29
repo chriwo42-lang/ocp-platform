@@ -7,7 +7,7 @@ Danach übernimmt ArgoCD die vollständige Verwaltung über Git.
 
 ## Voraussetzungen
 
-```bash
+```powershell
 crc status          # Cluster muss Running sein
 oc whoami           # muss "kubeadmin" sein
 ```
@@ -16,25 +16,20 @@ oc whoami           # muss "kubeadmin" sein
 
 ## Schritt 1 – GitOps Operator installieren
 
-```bash
-oc apply -f bootstrap/gitops-operator/
-```
-
-Warten bis ArgoCD vollständig gestartet ist:
-
-```bash
-oc rollout status deployment/openshift-gitops-server -n openshift-gitops --timeout=180s
+```powershell
+oc apply -f bootstrap\gitops-operator\
+oc rollout status deployment/openshift-gitops-server -n openshift-gitops --timeout=300s
 ```
 
 ---
 
 ## Schritt 2 – HTPasswd Secret anlegen
 
-BCrypt-Hash generieren (Rounds 10, z.B. unter https://bcrypt-generator.com):
+BCrypt-Hash generieren (Rounds 10): https://bcrypt-generator.com
 
-```bash
-oc create secret generic htpasswd-secret \
-  --from-literal=htpasswd='admin:$2a$10$HASH_HIER_EINSETZEN' \
+```powershell
+oc create secret generic htpasswd-secret `
+  --from-literal=htpasswd='admin:$2a$10$HASH_HIER_EINSETZEN' `
   -n openshift-config
 ```
 
@@ -44,26 +39,8 @@ oc create secret generic htpasswd-secret \
 
 ## Schritt 3 – OAuth auf HTPasswd umstellen
 
-```bash
-oc patch oauth cluster --type merge -p '{
-  "spec": {
-    "identityProviders": [{
-      "name": "htpasswd",
-      "mappingMethod": "claim",
-      "type": "HTPasswd",
-      "htpasswd": {
-        "fileData": {
-          "name": "htpasswd-secret"
-        }
-      }
-    }]
-  }
-}'
-```
-
-Warten bis der OAuth-Server neu startet:
-
-```bash
+```powershell
+oc apply -f bootstrap\oauth.yaml
 oc rollout status deployment/oauth-openshift -n openshift-authentication --timeout=120s
 ```
 
@@ -74,18 +51,15 @@ oc rollout status deployment/oauth-openshift -n openshift-authentication --timeo
 Dieser Schritt ist nur bis zum ersten ArgoCD-Sync nötig.  
 Danach verwaltet ArgoCD die Gruppe `cluster-admins` aus Git.
 
-```bash
-# Temporäre Gruppe anlegen (wird von ArgoCD in Schritt 8 übernommen)
+```powershell
 oc adm groups new cluster-admins
 oc adm groups add-users cluster-admins admin
-
-# cluster-admin Berechtigung für admin
 oc adm policy add-cluster-role-to-user cluster-admin admin
 ```
 
 Login testen:
 
-```bash
+```powershell
 oc login -u admin -p <dein-passwort> https://api.crc.testing:6443
 oc whoami   # muss "admin" zurückgeben
 ```
@@ -94,8 +68,8 @@ oc whoami   # muss "admin" zurückgeben
 
 ## Schritt 5 – ArgoCD RBAC setzen
 
-```bash
-oc apply -f bootstrap/argocd-rbac-cm.yaml
+```powershell
+oc apply -f bootstrap\argocd-rbac-cm.yaml
 ```
 
 Mappt die Gruppe `cluster-admins` auf die ArgoCD admin-Rolle.
@@ -104,16 +78,16 @@ Mappt die Gruppe `cluster-admins` auf die ArgoCD admin-Rolle.
 
 ## Schritt 6 – AppProject "platform" anlegen
 
-```bash
-oc apply -f bootstrap/platform-project.yaml
+```powershell
+oc apply -f bootstrap\platform-project.yaml
 ```
 
 ---
 
 ## Schritt 7 – Root App-of-Apps anlegen
 
-```bash
-oc apply -f bootstrap/platform-app.yaml
+```powershell
+oc apply -f bootstrap\platform-app.yaml
 ```
 
 Ab hier übernimmt ArgoCD. Alle weiteren Änderungen erfolgen **ausschließlich über Git**.
@@ -126,13 +100,12 @@ ArgoCD deployt nun automatisch alle Child-Apps in der richtigen Reihenfolge:
 
 | Wave | App | Was wird deployt |
 |---|---|---|
-| 0 | `cluster-config` | Gruppe `cluster-admins` aus Git (übernimmt temporäre Gruppe aus Schritt 4) |
-| 0 | `workloads-app` | Lädt `ocp-workloads/apps/` — deployt AppProjects, Gruppen, Apps |
+| 0 | `cluster-config` | Gruppe `cluster-admins` aus Git |
+| 0 | `workloads-app` | AppProjects, Gruppen, Namespace-Config, Apps |
 
-Sync-Status prüfen:
+ArgoCD URL aufrufen:
 
-```bash
-# ArgoCD URL ausgeben
+```powershell
 oc get route openshift-gitops-server -n openshift-gitops -o jsonpath='{.spec.host}'
 ```
 
@@ -150,30 +123,34 @@ Folgende Apps müssen `Synced / Healthy` sein:
 
 ## Neuen User anlegen
 
-Nach dem Bootstrap werden User **nicht** mehr manuell per `oc adm` angelegt.  
-Der Ablauf ist zweigeteilt:
-
-**1. Gruppe in Git pflegen** (z.B. `ocp-workloads/apps/project-a/groups.yaml`):
+**1. Gruppe in Git pflegen:**
 
 ```yaml
+# ocp-workloads/apps/project-a/groups.yaml
 users:
   - neuer-user
 ```
 
-**2. Passwort manuell im Secret ergänzen:**
+**2. Passwort manuell im Secret ergänzen (PowerShell):**
 
-```bash
-oc get secret htpasswd-secret -n openshift-config \
-  -o jsonpath='{.data.htpasswd}' | base64 -d > /tmp/htpasswd
+```powershell
+# Bestehenden Hash auslesen
+oc get secret htpasswd-secret -n openshift-config `
+  -o jsonpath='{.data.htpasswd}' | `
+  [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) | `
+  Out-File -FilePath "$env:TEMP\htpasswd" -Encoding utf8NoBOM
 
-htpasswd /tmp/htpasswd neuer-user
+# Neuen Eintrag manuell anhängen (Hash von https://bcrypt-generator.com):
+# Format: username:$2a$10$HASH
+Add-Content "$env:TEMP\htpasswd" "neuer-user:`$2a`$10`$HASH_HIER"
 
-oc create secret generic htpasswd-secret \
-  --from-file=htpasswd=/tmp/htpasswd \
-  -n openshift-config \
+# Secret aktualisieren
+oc create secret generic htpasswd-secret `
+  --from-file=htpasswd="$env:TEMP\htpasswd" `
+  -n openshift-config `
   --dry-run=client -o yaml | oc apply -f -
 
-rm /tmp/htpasswd
+Remove-Item "$env:TEMP\htpasswd"
 ```
 
 ---
@@ -182,18 +159,18 @@ rm /tmp/htpasswd
 
 **ArgoCD zeigt "Unknown" für admin:**
 
-```bash
-oc apply -f bootstrap/argocd-rbac-cm.yaml
+```powershell
+oc apply -f bootstrap\argocd-rbac-cm.yaml
 oc rollout restart deployment/openshift-gitops-server -n openshift-gitops
 ```
 
-**OAuth funktioniert nicht:**
+**OAuth funktioniert nicht — Hash prüfen:**
 
-```bash
-oc get secret htpasswd-secret -n openshift-config \
-  -o jsonpath='{.data.htpasswd}' | base64 -d
+```powershell
+oc get secret htpasswd-secret -n openshift-config `
+  -o jsonpath='{.data.htpasswd}' | `
+  [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_))
 ```
 
 **`cluster-config` App zeigt OutOfSync für Group:**  
-ArgoCD versucht die Gruppe zu überschreiben. Das ist normal beim ersten Sync —  
-ArgoCD übernimmt die temporär angelegte Gruppe aus Schritt 4 und verwaltet sie ab jetzt aus Git.
+Normal beim ersten Sync — ArgoCD übernimmt die temporär angelegte Gruppe aus Schritt 4.
