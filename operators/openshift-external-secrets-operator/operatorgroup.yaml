@@ -1,7 +1,0 @@
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: openshift-external-secrets-operator
-  namespace: openshift-external-secrets-operator
-spec:
-  upgradeStrategy: Default
