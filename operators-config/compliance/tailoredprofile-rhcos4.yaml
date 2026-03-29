@@ -1,0 +1,20 @@
+apiVersion: compliance.openshift.io/v1alpha1
+kind: TailoredProfile
+metadata:
+  name: rhcos4-moderate-tailored
+  namespace: openshift-compliance
+spec:
+  description: RHCOS4 Moderate - CRC angepasst
+  title: RHCOS4 Moderate Tailored
+  extends: rhcos4-moderate
+  disableRules:
+    - name: rhcos4-enable-fips-mode
+      rationale: "FIPS wird von CRC nicht unterstuetzt"
+    - name: rhcos4-package-usbguard-installed
+      rationale: "USB nicht relevant in CRC"
+    - name: rhcos4-service-usbguard-enabled
+      rationale: "USB nicht relevant in CRC"
+    - name: rhcos4-usbguard-allow-hid-and-hub
+      rationale: "USB nicht relevant in CRC"
+    - name: rhcos4-coreos-nousb-kernel-argument
+      rationale: "USB nicht relevant in CRC"

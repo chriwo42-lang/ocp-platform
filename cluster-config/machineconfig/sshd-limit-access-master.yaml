@@ -1,0 +1,18 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  name: 75-sshd-limit-user-access-master
+  labels:
+    machineconfiguration.openshift.io/role: master
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+    storage:
+      files:
+        - path: /etc/ssh/sshd_config.d/75-limit-access.conf
+          mode: 0600
+          contents:
+            # AllowGroups: erlaubt SSH nur fuer diese Gruppen
+            # core: CRC/OpenShift interner User - darf nicht entfernt werden
+            source: data:,AllowUsers%20core%0AAllowGroups%20wheel%20core%20sudo%0A
