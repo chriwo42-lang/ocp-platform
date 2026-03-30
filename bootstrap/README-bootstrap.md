@@ -40,26 +40,28 @@ oc create secret generic htpasswd-secret `
 ## Schritt 3 – OAuth auf HTPasswd umstellen
 
 ```powershell
-oc apply -f bootstrap\oauth.yaml
+oc apply -f cluster-config\oauth\oauth.yaml
 oc rollout status deployment/oauth-openshift -n openshift-authentication --timeout=120s
 ```
 
-> Danach wird `oauth.yaml` von ArgoCD via `cluster-config/oauth/oauth.yaml` verwaltet.
+> Die OAuth-Konfiguration liegt in `cluster-config/oauth/oauth.yaml` und wird
+> nach dem ersten ArgoCD-Sync von dort verwaltet.
 
 ---
 
-## Schritt 4 – Admin-User temporär einrichten
+## Schritt 4 – Admin-User einrichten
 
-Gruppe und ClusterRoleBindings werden nur temporär manuell angelegt.  
-Danach verwaltet ArgoCD beides aus Git (`cluster-config/groups/` und `cluster-config/rbac/`).
+Alle Ressourcen werden direkt aus Git angewendet.  
+ArgoCD übernimmt sie beim ersten Sync ohne Konflikt.
 
 ```powershell
-# Gruppe anlegen und admin hinzufügen
-oc adm groups new cluster-admins
-oc adm groups add-users cluster-admins admin
+# Gruppe mit admin-User anlegen
+oc apply -f cluster-config\rbac\groups\cluster-admins.yaml
 
-# ClusterRoleBindings anlegen (werden von ArgoCD später aus Git übernommen)
+# cluster-admin Berechtigung für die Gruppe
 oc apply -f cluster-config\rbac\cluster-admins-cluster-admin.yaml
+
+# cluster-admin Berechtigung für den ArgoCD Application Controller
 oc apply -f cluster-config\rbac\argocd-cluster-admin.yaml
 ```
 
@@ -71,7 +73,7 @@ oc whoami   # muss "admin" zurückgeben
 ```
 
 > **ArgoCD RBAC:** Der OpenShift GitOps Operator setzt `g, cluster-admins, role:admin`
-> automatisch in der `argocd-rbac-cm`. Kein manueller Schritt notwendig.
+> automatisch. Kein manueller Schritt notwendig.
 
 ---
 
@@ -184,4 +186,4 @@ oc get secret htpasswd-secret -n openshift-config `
 ```
 
 **`cluster-config` App zeigt OutOfSync für Group oder ClusterRoleBinding:**  
-Normal beim ersten Sync — ArgoCD übernimmt die temporär angelegten Ressourcen aus Schritt 4.
+Normal beim ersten Sync — ArgoCD übernimmt die in Schritt 4 angelegten Ressourcen.

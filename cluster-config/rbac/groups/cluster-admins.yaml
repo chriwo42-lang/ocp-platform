@@ -1,0 +1,11 @@
+apiVersion: user.openshift.io/v1
+kind: Group
+metadata:
+  name: cluster-admins
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    # Mitglieder dieser Gruppe erhalten:
+    # - cluster-admin ClusterRole (via rbac/cluster-admins-cluster-admin.yaml)
+    # - ArgoCD admin-Rolle (vom OpenShift GitOps Operator automatisch gesetzt)
+users:
+  - admin

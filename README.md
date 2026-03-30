@@ -44,9 +44,10 @@ Es ist **keine** manuelle RBAC-Konfiguration notwendig.
 ```
 platform-app  (Root App-of-Apps, Bootstrap)
 ├── cluster-config  ──────────────→ cluster-config/                Wave -1
-│   ├── groups/cluster-admins.yaml
 │   ├── oauth/oauth.yaml
 │   └── rbac/
+│       ├── groups/
+│       │   └── cluster-admins.yaml
 │       ├── argocd-cluster-admin.yaml
 │       └── cluster-admins-cluster-admin.yaml
 │
@@ -88,7 +89,6 @@ ocp-platform/
 │   │   ├── namespace.yaml
 │   │   ├── operatorgroup.yaml
 │   │   └── subscription.yaml
-│   ├── oauth.yaml             ← nur Bootstrap (danach via cluster-config verwaltet)
 │   ├── platform-project.yaml  AppProject "platform"
 │   ├── platform-app.yaml      Root App-of-Apps
 │   └── README-bootstrap.md
@@ -97,11 +97,11 @@ ocp-platform/
 │   ├── workloads-groups-app.yaml     Wave -1 → ocp-workloads/groups/
 │   └── workloads-app.yaml            Wave  0 → ocp-workloads/apps/
 └── cluster-config/
-    ├── groups/
-    │   └── cluster-admins.yaml
     ├── oauth/
-    │   └── oauth.yaml
+    │   └── oauth.yaml                HTPasswd Identity Provider
     └── rbac/
+        ├── groups/
+        │   └── cluster-admins.yaml   Gruppe cluster-admins
         ├── argocd-cluster-admin.yaml
         └── cluster-admins-cluster-admin.yaml
 ```
@@ -112,7 +112,7 @@ ocp-platform/
 
 | Gruppe | Definiert in | Zweck |
 |---|---|---|
-| `cluster-admins` | `ocp-platform/cluster-config/groups/` | Platform-weite Admins + ArgoCD admin |
+| `cluster-admins` | `cluster-config/rbac/groups/` | Platform-weite Admins + ArgoCD admin |
 | `project-a-admins` | `ocp-workloads/groups/project-a/` | Admins für project-a Namespaces |
 | `project-a-developers` | `ocp-workloads/groups/project-a/` | Entwickler für project-a Namespaces |
 | `project-a-viewers` | `ocp-workloads/groups/project-a/` | Leser für project-a Namespaces |
@@ -124,7 +124,7 @@ Gruppen sind **globale Ressourcen** — sie werden einmal definiert und in den j
 
 ## Neuen Platform-Admin hinzufügen
 
-**1.** `cluster-config/groups/cluster-admins.yaml` editieren:
+**1.** `cluster-config/rbac/groups/cluster-admins.yaml` editieren:
 
 ```yaml
 users:
