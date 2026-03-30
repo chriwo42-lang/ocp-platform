@@ -25,7 +25,7 @@ oc rollout status deployment/openshift-gitops-server -n openshift-gitops --timeo
 
 ## Schritt 2 – HTPasswd Secret anlegen
 
-BCrypt-Hash generieren (Rounds 10): <https://bcrypt-generator.com>
+BCrypt-Hash generieren (Rounds 10): https://bcrypt-generator.com
 
 ```powershell
 oc create secret generic htpasswd-secret `
@@ -97,15 +97,23 @@ Ab hier übernimmt ArgoCD. Alle weiteren Änderungen erfolgen **ausschließlich 
 
 ## Schritt 7 – ArgoCD Sync abwarten
 
-ArgoCD deployt nun automatisch alle Child-Apps in der richtigen Reihenfolge:
+ArgoCD deployt `platform-app` und dessen Child-Apps automatisch.
 
-| Wave | App / Ressource | Was wird deployt |
-| --- | --- | --- |
+**Ebene 1 — innerhalb `platform-app`:**
+
+| Wave | Child-App | Was wird deployt |
+|---|---|---|
 | -1 | `cluster-config` | OAuth, `cluster-admins` Gruppe, ClusterRoleBindings |
-| -1 | `workloads-groups-app` | Gruppen für alle Projekte |
+| 0 | `workloads-app` | Alles aus `ocp-workloads/apps/` |
+
+**Ebene 2 — innerhalb `workloads-app`** (unabhängig von Ebene 1):
+
+| Wave | Ressource | Was wird deployt |
+|---|---|---|
+| -1 | Gruppen | `project-a-*`, `project-b-*` Gruppen |
 | -1 | AppProjects | AppProject je Projekt |
-| 0 | `workloads-app` | Namespace-Config Apps |
-| 1 | App-of-Apps | Eigentliche Workloads |
+| 0 | Namespace-Config | Namespace, Quota, NetPol, RBAC je App |
+| 1 | Apps | Eigentliche Workloads (my-app, your-app) |
 
 ArgoCD UI aufrufen:
 
@@ -118,25 +126,24 @@ Login mit `admin` / `<dein-passwort>`.
 Folgende Apps müssen `Synced / Healthy` sein:
 
 | App | Quelle |
-| --- | --- |
+|---|---|
 | `platform-app` | ocp-platform/apps/ |
 | `cluster-config` | ocp-platform/cluster-config/ |
-| `workloads-groups-app` | ocp-workloads/groups/ |
 | `workloads-app` | ocp-workloads/apps/ |
-| `project-a-my-app-namespace` | ocp-workloads charts/namespace-config |
+| `project-a-my-app-namespace` | ocp-workloads/charts/namespace-config |
 | `project-a-my-app` | my-app/helm |
-| `project-a-your-app-namespace` | ocp-workloads charts/namespace-config |
+| `project-a-your-app-namespace` | ocp-workloads/charts/namespace-config |
 | `project-a-your-app` | your-app/helm |
-| `project-b-my-app-namespace` | ocp-workloads charts/namespace-config |
+| `project-b-my-app-namespace` | ocp-workloads/charts/namespace-config |
 | `project-b-my-app` | my-app/helm |
-| `project-b-your-app-namespace` | ocp-workloads charts/namespace-config |
+| `project-b-your-app-namespace` | ocp-workloads/charts/namespace-config |
 | `project-b-your-app` | your-app/helm |
 
 ---
 
 ## Neuen User anlegen
 
-**1. Gruppe in Git pflegen** (`ocp-workloads/groups/<project>/<rolle>.yaml`):
+**1. Gruppe in Git pflegen** (`ocp-workloads/apps/groups/<project>/<rolle>.yaml`):
 
 ```yaml
 users:
