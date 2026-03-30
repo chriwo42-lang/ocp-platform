@@ -77,10 +77,10 @@ platform-app  (Root App-of-Apps, Bootstrap)
             └── your-app-app.yaml                                  Wave  1
 ```
 
-> **Hinweis zu Sync Waves:** Waves steuern die Reihenfolge **innerhalb einer Application**.
-> Die Wave `-1` auf `cluster-config-app` und Wave `0` auf `workloads-app` steuern die
-> Reihenfolge innerhalb von `platform-app`. Die internen Waves in `workloads-app`
-> (Gruppen, AppProjects, Namespace-Config, Apps) sind davon unabhängig.
+> **Sync Waves** steuern die Deploy-Reihenfolge **innerhalb einer Application**.
+> `cluster-config` (Wave -1) und `workloads-app` (Wave 0) sind Waves innerhalb von `platform-app`.
+> Die internen Waves in `workloads-app` sind davon unabhängig.
+> Details: [bootstrap/README-bootstrap.md](bootstrap/README-bootstrap.md#schritt-7--argocd-sync-abwarten)
 
 ---
 
@@ -93,8 +93,8 @@ ocp-platform/
 │   │   ├── namespace.yaml
 │   │   ├── operatorgroup.yaml
 │   │   └── subscription.yaml
-│   ├── platform-project.yaml  AppProject "platform"
-│   ├── platform-app.yaml      Root App-of-Apps
+│   ├── platform-project.yaml      AppProject "platform" (Bootstrap)
+│   ├── platform-app.yaml          Root App-of-Apps (Bootstrap)
 │   └── README-bootstrap.md
 ├── apps/
 │   ├── cluster-config-app.yaml    Wave -1 → cluster-config/
@@ -120,8 +120,8 @@ ocp-platform/
 | `project-a-developers` | `ocp-workloads/apps/groups/project-a/` | Entwickler für project-a Namespaces |
 | `project-a-viewers` | `ocp-workloads/apps/groups/project-a/` | Leser für project-a Namespaces |
 
-Gruppen sind **globale Ressourcen** — sie werden einmal definiert und in den jeweiligen  
-`values.yaml` der Apps unter `rbac.adminGroups` / `rbac.editGroups` / `rbac.viewGroups` referenziert.
+Gruppen sind **globale Ressourcen** — einmal definiert, in `values.yaml` der Apps referenziert  
+unter `rbac.adminGroups` / `rbac.editGroups` / `rbac.viewGroups`.
 
 ---
 
