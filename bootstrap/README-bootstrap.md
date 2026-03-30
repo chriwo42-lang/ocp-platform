@@ -99,21 +99,33 @@ Ab hier übernimmt ArgoCD. Alle weiteren Änderungen erfolgen **ausschließlich 
 
 ArgoCD deployt `platform-app` und dessen Child-Apps automatisch.
 
-**Ebene 1 — innerhalb `platform-app`:**
+> **Wie Sync Waves funktionieren:** Waves steuern die Deploy-Reihenfolge
+> **innerhalb einer einzigen ArgoCD Application**. Jede Application hat
+> ihren eigenen Wave-Kontext — die Waves in `cluster-config` und
+> `workloads-app` sind voneinander unabhängig.
 
-| Wave | Child-App | Was wird deployt |
+**Ebene 1 — innerhalb `platform-app`** (steuert Child-App Reihenfolge):
+
+| Wave | Child-App | Warum diese Reihenfolge |
 |---|---|---|
-| -1 | `cluster-config` | OAuth, `cluster-admins` Gruppe, ClusterRoleBindings |
-| 0 | `workloads-app` | Alles aus `ocp-workloads/apps/` |
+| -1 | `cluster-config` | `argocd-cluster-admin` CRB muss existieren bevor `workloads-app` Ressourcen in anderen Namespaces anlegt |
+| 0 | `workloads-app` | Startet erst wenn `cluster-config` vollständig synced ist |
+
+**Ebene 2 — innerhalb `cluster-config`** (unabhängig von Ebene 1):
+
+| Wave | Ressource | Warum diese Reihenfolge |
+|---|---|---|
+| -1 | `cluster-admins` Gruppe | Muss vor dem ClusterRoleBinding existieren das sie referenziert |
+| 0 | ClusterRoleBindings, OAuth | Referenzieren die Gruppe aus Wave -1 |
 
 **Ebene 2 — innerhalb `workloads-app`** (unabhängig von Ebene 1):
 
-| Wave | Ressource | Was wird deployt |
+| Wave | Ressource | Warum diese Reihenfolge |
 |---|---|---|
-| -1 | Gruppen | `project-a-*`, `project-b-*` Gruppen |
-| -1 | AppProjects | AppProject je Projekt |
-| 0 | Namespace-Config | Namespace, Quota, NetPol, RBAC je App |
-| 1 | Apps | Eigentliche Workloads (my-app, your-app) |
+| -1 | Gruppen | Müssen vor RoleBindings existieren die sie referenzieren |
+| -1 | AppProjects | Müssen vor Applications existieren die sie referenzieren |
+| 0 | Namespace-Config Apps | Legen Namespace, Quota, NetPol und RoleBindings an |
+| 1 | App-of-Apps | Eigentliche Workloads deployen erst wenn Namespace existiert |
 
 ArgoCD UI aufrufen:
 

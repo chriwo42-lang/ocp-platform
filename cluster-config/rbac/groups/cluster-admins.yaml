@@ -3,6 +3,8 @@ kind: Group
 metadata:
   name: cluster-admins
   annotations:
+    # Wave -1: Gruppe muss vor dem ClusterRoleBinding (Wave 0) existieren
+    # das sie referenziert.
     argocd.argoproj.io/sync-wave: "-1"
     # Mitglieder dieser Gruppe erhalten:
     # - cluster-admin ClusterRole (via rbac/cluster-admins-cluster-admin.yaml)

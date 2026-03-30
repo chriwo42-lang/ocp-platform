@@ -4,8 +4,9 @@ metadata:
   name: cluster-config
   namespace: openshift-gitops
   annotations:
-    # Wave -1: cluster-config (ArgoCD RBAC, OAuth, Gruppen, ClusterRoleBindings)
-    # muss vor workloads-app (Wave 0) fertig sein
+    # Wave -1: cluster-config muss vor workloads-app (Wave 0) fertig sein.
+    # Grund: argocd-cluster-admin ClusterRoleBinding muss existieren bevor
+    # workloads-app versucht Ressourcen in anderen Namespaces anzulegen.
     argocd.argoproj.io/sync-wave: "-1"
 spec:
   project: platform

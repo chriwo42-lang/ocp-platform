@@ -3,9 +3,10 @@ kind: ClusterRoleBinding
 metadata:
   name: cluster-admins-cluster-admin
   annotations:
+    # Wave 0: Gruppe cluster-admins (Wave -1) muss zuerst existieren.
     argocd.argoproj.io/sync-wave: "0"
     # Alle Mitglieder der Gruppe "cluster-admins" erhalten cluster-admin Rechte.
-    # Mitglieder werden in cluster-config/groups/cluster-admins.yaml verwaltet.
+    # Mitglieder werden in rbac/groups/cluster-admins.yaml verwaltet.
 subjects:
   - kind: Group
     name: cluster-admins
