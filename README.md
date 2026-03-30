@@ -51,7 +51,7 @@ platform-app  (Root App-of-Apps, Bootstrap)
 │       ├── argocd-cluster-admin.yaml
 │       └── cluster-admins-cluster-admin.yaml
 │
-└── workloads-app  ────────────────→ ocp-workloads/apps/           Wave -1
+└── workloads-app  ────────────────→ ocp-workloads/apps/           Wave  0
     ├── groups/
     │   ├── project-a/admins.yaml                                  Wave -1
     │   ├── project-a/developers.yaml                              Wave -1
@@ -77,6 +77,11 @@ platform-app  (Root App-of-Apps, Bootstrap)
             └── your-app-app.yaml                                  Wave  1
 ```
 
+> **Hinweis zu Sync Waves:** Waves steuern die Reihenfolge **innerhalb einer Application**.
+> Die Wave `-1` auf `cluster-config-app` und Wave `0` auf `workloads-app` steuern die
+> Reihenfolge innerhalb von `platform-app`. Die internen Waves in `workloads-app`
+> (Gruppen, AppProjects, Namespace-Config, Apps) sind davon unabhängig.
+
 ---
 
 ## Repo-Struktur
@@ -93,7 +98,7 @@ ocp-platform/
 │   └── README-bootstrap.md
 ├── apps/
 │   ├── cluster-config-app.yaml    Wave -1 → cluster-config/
-│   └── workloads-app.yaml         Wave -1 → ocp-workloads/apps/
+│   └── workloads-app.yaml         Wave  0 → ocp-workloads/apps/
 └── cluster-config/
     ├── oauth/
     │   └── oauth.yaml
