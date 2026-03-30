@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: workloads-groups
+  namespace: openshift-gitops
+  annotations:
+    # Wave -1: Gruppen müssen existieren bevor Namespace-Config RoleBindings deployt werden
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/chriwo42-lang/ocp-workloads.git
+    targetRevision: main
+    path: groups
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openshift-gitops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
