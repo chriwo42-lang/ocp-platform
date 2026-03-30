@@ -14,9 +14,10 @@ ocp-platform/               ← dieses Repo (Platform Team)
   cluster-config/           ← cluster-weite Konfiguration, von ArgoCD verwaltet
 
 ocp-workloads/              ← Workloads-Repo (Platform Team)
-  groups/                   ← Globale Gruppen-Definitionen (je Projekt ein Unterverzeichnis)
+  apps/
+    groups/                 ← Globale Gruppen (je Projekt ein Unterverzeichnis)
+    <project>/              ← je Projekt: AppProject + App-Referenzen
   charts/namespace-config/  ← Helm Chart für Namespace-Konfiguration
-  apps/<project>/           ← je Projekt: AppProject + App-Referenzen
 
 <app-repo>/                 ← je App ein eigenes Repo (Entwickler-Team)
   helm/
@@ -46,20 +47,18 @@ platform-app  (Root App-of-Apps, Bootstrap)
 ├── cluster-config  ──────────────→ cluster-config/                Wave -1
 │   ├── oauth/oauth.yaml
 │   └── rbac/
-│       ├── groups/
-│       │   └── cluster-admins.yaml
+│       ├── groups/cluster-admins.yaml
 │       ├── argocd-cluster-admin.yaml
 │       └── cluster-admins-cluster-admin.yaml
 │
-├── workloads-groups-app  ─────────→ ocp-workloads/groups/         Wave -1
-│   ├── project-a/admins.yaml
-│   ├── project-a/developers.yaml
-│   ├── project-a/viewers.yaml
-│   ├── project-b/admins.yaml
-│   ├── project-b/developers.yaml
-│   └── project-b/viewers.yaml
-│
-└── workloads-app  ────────────────→ ocp-workloads/apps/           Wave 0
+└── workloads-app  ────────────────→ ocp-workloads/apps/           Wave -1
+    ├── groups/
+    │   ├── project-a/admins.yaml                                  Wave -1
+    │   ├── project-a/developers.yaml                              Wave -1
+    │   ├── project-a/viewers.yaml                                 Wave -1
+    │   ├── project-b/admins.yaml                                  Wave -1
+    │   ├── project-b/developers.yaml                              Wave -1
+    │   └── project-b/viewers.yaml                                 Wave -1
     ├── project-a/
     │   ├── appproject.yaml                                        Wave -1
     │   ├── my-app/
@@ -93,15 +92,14 @@ ocp-platform/
 │   ├── platform-app.yaml      Root App-of-Apps
 │   └── README-bootstrap.md
 ├── apps/
-│   ├── cluster-config-app.yaml       Wave -1 → cluster-config/
-│   ├── workloads-groups-app.yaml     Wave -1 → ocp-workloads/groups/
-│   └── workloads-app.yaml            Wave  0 → ocp-workloads/apps/
+│   ├── cluster-config-app.yaml    Wave -1 → cluster-config/
+│   └── workloads-app.yaml         Wave -1 → ocp-workloads/apps/
 └── cluster-config/
     ├── oauth/
-    │   └── oauth.yaml                HTPasswd Identity Provider
+    │   └── oauth.yaml
     └── rbac/
         ├── groups/
-        │   └── cluster-admins.yaml   Gruppe cluster-admins
+        │   └── cluster-admins.yaml
         ├── argocd-cluster-admin.yaml
         └── cluster-admins-cluster-admin.yaml
 ```
@@ -113,9 +111,9 @@ ocp-platform/
 | Gruppe | Definiert in | Zweck |
 |---|---|---|
 | `cluster-admins` | `cluster-config/rbac/groups/` | Platform-weite Admins + ArgoCD admin |
-| `project-a-admins` | `ocp-workloads/groups/project-a/` | Admins für project-a Namespaces |
-| `project-a-developers` | `ocp-workloads/groups/project-a/` | Entwickler für project-a Namespaces |
-| `project-a-viewers` | `ocp-workloads/groups/project-a/` | Leser für project-a Namespaces |
+| `project-a-admins` | `ocp-workloads/apps/groups/project-a/` | Admins für project-a Namespaces |
+| `project-a-developers` | `ocp-workloads/apps/groups/project-a/` | Entwickler für project-a Namespaces |
+| `project-a-viewers` | `ocp-workloads/apps/groups/project-a/` | Leser für project-a Namespaces |
 
 Gruppen sind **globale Ressourcen** — sie werden einmal definiert und in den jeweiligen  
 `values.yaml` der Apps unter `rbac.adminGroups` / `rbac.editGroups` / `rbac.viewGroups` referenziert.

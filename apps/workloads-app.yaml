@@ -4,7 +4,9 @@ metadata:
   name: workloads-app
   namespace: openshift-gitops
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    # Wave -1: Gruppen (apps/groups/) haben ebenfalls Wave -1 und werden
+    # vor Namespace-Config Apps (Wave 0) deployt
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   project: platform
   source:

@@ -25,7 +25,7 @@ oc rollout status deployment/openshift-gitops-server -n openshift-gitops --timeo
 
 ## Schritt 2 – HTPasswd Secret anlegen
 
-BCrypt-Hash generieren (Rounds 10): https://bcrypt-generator.com
+BCrypt-Hash generieren (Rounds 10): <https://bcrypt-generator.com>
 
 ```powershell
 oc create secret generic htpasswd-secret `
@@ -100,7 +100,7 @@ Ab hier übernimmt ArgoCD. Alle weiteren Änderungen erfolgen **ausschließlich 
 ArgoCD deployt nun automatisch alle Child-Apps in der richtigen Reihenfolge:
 
 | Wave | App / Ressource | Was wird deployt |
-|---|---|---|
+| --- | --- | --- |
 | -1 | `cluster-config` | OAuth, `cluster-admins` Gruppe, ClusterRoleBindings |
 | -1 | `workloads-groups-app` | Gruppen für alle Projekte |
 | -1 | AppProjects | AppProject je Projekt |
@@ -118,7 +118,7 @@ Login mit `admin` / `<dein-passwort>`.
 Folgende Apps müssen `Synced / Healthy` sein:
 
 | App | Quelle |
-|---|---|
+| --- | --- |
 | `platform-app` | ocp-platform/apps/ |
 | `cluster-config` | ocp-platform/cluster-config/ |
 | `workloads-groups-app` | ocp-workloads/groups/ |
