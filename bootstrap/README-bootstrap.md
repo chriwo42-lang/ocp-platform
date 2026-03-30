@@ -50,13 +50,17 @@ oc rollout status deployment/oauth-openshift -n openshift-authentication --timeo
 
 ## Schritt 4 – Admin-User temporär einrichten
 
-Dieser Schritt ist nur bis zum ersten ArgoCD-Sync nötig.  
-Danach verwaltet ArgoCD die Gruppe `cluster-admins` aus Git.
+Gruppe und ClusterRoleBindings werden nur temporär manuell angelegt.  
+Danach verwaltet ArgoCD beides aus Git (`cluster-config/groups/` und `cluster-config/rbac/`).
 
 ```powershell
+# Gruppe anlegen und admin hinzufügen
 oc adm groups new cluster-admins
 oc adm groups add-users cluster-admins admin
-oc adm policy add-cluster-role-to-user cluster-admin admin
+
+# ClusterRoleBindings anlegen (werden von ArgoCD später aus Git übernommen)
+oc apply -f cluster-config\rbac\cluster-admins-cluster-admin.yaml
+oc apply -f cluster-config\rbac\argocd-cluster-admin.yaml
 ```
 
 Login testen:
@@ -66,30 +70,12 @@ oc login -u admin -p <dein-passwort> https://api.crc.testing:6443
 oc whoami   # muss "admin" zurückgeben
 ```
 
----
-
-## Schritt 5 – ArgoCD RBAC setzen
-
-```powershell
-oc apply -f bootstrap\argocd-rbac-cm.yaml
-```
-
-> Danach wird die ConfigMap von ArgoCD via `cluster-config/argocd/argocd-rbac-cm.yaml` verwaltet.
+> **ArgoCD RBAC:** Der OpenShift GitOps Operator setzt `g, cluster-admins, role:admin`
+> automatisch in der `argocd-rbac-cm`. Kein manueller Schritt notwendig.
 
 ---
 
-## Schritt 6 – ArgoCD cluster-admin Berechtigung setzen
-
-ArgoCD benötigt cluster-admin um Ressourcen in allen Namespaces verwalten zu können.  
-Zugriffskontrolle erfolgt über AppProjects — nicht über dieses ClusterRoleBinding direkt.
-
-```powershell
-oc apply -f cluster-config\rbac\argocd-cluster-admin.yaml
-```
-
----
-
-## Schritt 7 – AppProject "platform" anlegen
+## Schritt 5 – AppProject "platform" anlegen
 
 ```powershell
 oc apply -f bootstrap\platform-project.yaml
@@ -97,7 +83,7 @@ oc apply -f bootstrap\platform-project.yaml
 
 ---
 
-## Schritt 8 – Root App-of-Apps anlegen
+## Schritt 6 – Root App-of-Apps anlegen
 
 ```powershell
 oc apply -f bootstrap\platform-app.yaml
@@ -107,17 +93,17 @@ Ab hier übernimmt ArgoCD. Alle weiteren Änderungen erfolgen **ausschließlich 
 
 ---
 
-## Schritt 9 – ArgoCD Sync abwarten
+## Schritt 7 – ArgoCD Sync abwarten
 
 ArgoCD deployt nun automatisch alle Child-Apps in der richtigen Reihenfolge:
 
 | Wave | App / Ressource | Was wird deployt |
 |---|---|---|
-| -1 | `cluster-config` | ArgoCD RBAC, OAuth, `cluster-admins` Gruppe, ArgoCD ClusterRoleBinding |
-| -1 | `project-a` AppProject | AppProject für project-a |
-| -1 | `project-a` Gruppen | `project-a-admins`, `project-a-developers` |
-| 0 | `workloads-app` | Namespace-Config Apps für my-app und your-app |
-| 1 | App-of-Apps | Eigentliche Workloads (my-app, your-app) |
+| -1 | `cluster-config` | OAuth, `cluster-admins` Gruppe, ClusterRoleBindings |
+| -1 | `workloads-groups-app` | Gruppen für alle Projekte |
+| -1 | AppProjects | AppProject je Projekt |
+| 0 | `workloads-app` | Namespace-Config Apps |
+| 1 | App-of-Apps | Eigentliche Workloads |
 
 ArgoCD UI aufrufen:
 
@@ -133,26 +119,30 @@ Folgende Apps müssen `Synced / Healthy` sein:
 |---|---|
 | `platform-app` | ocp-platform/apps/ |
 | `cluster-config` | ocp-platform/cluster-config/ |
+| `workloads-groups-app` | ocp-workloads/groups/ |
 | `workloads-app` | ocp-workloads/apps/ |
 | `project-a-my-app-namespace` | ocp-workloads charts/namespace-config |
 | `project-a-my-app` | my-app/helm |
 | `project-a-your-app-namespace` | ocp-workloads charts/namespace-config |
 | `project-a-your-app` | your-app/helm |
+| `project-b-my-app-namespace` | ocp-workloads charts/namespace-config |
+| `project-b-my-app` | my-app/helm |
+| `project-b-your-app-namespace` | ocp-workloads charts/namespace-config |
+| `project-b-your-app` | your-app/helm |
 
 ---
 
 ## Neuen User anlegen
 
-**1. Gruppe in Git pflegen:**
+**1. Gruppe in Git pflegen** (`ocp-workloads/groups/<project>/<rolle>.yaml`):
 
 ```yaml
-# ocp-workloads/apps/project-a/groups.yaml
 users:
   - neuer-user
 ```
 
 ```powershell
-git add . && git commit -m "feat(project-a): add neuer-user"
+git add . && git commit -m "feat(groups): add neuer-user"
 git push
 ```
 
@@ -179,13 +169,6 @@ Remove-Item "$env:TEMP\htpasswd"
 
 ## Troubleshooting
 
-**ArgoCD zeigt "Unknown" für admin:**
-
-```powershell
-oc apply -f bootstrap\argocd-rbac-cm.yaml
-oc rollout restart deployment/openshift-gitops-server -n openshift-gitops
-```
-
 **Apps zeigen "forbidden" Fehler:**
 
 ```powershell
@@ -200,5 +183,5 @@ oc get secret htpasswd-secret -n openshift-config `
   [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_))
 ```
 
-**`cluster-config` App zeigt OutOfSync für Group:**  
-Normal beim ersten Sync — ArgoCD übernimmt die temporär angelegte Gruppe aus Schritt 4.
+**`cluster-config` App zeigt OutOfSync für Group oder ClusterRoleBinding:**  
+Normal beim ersten Sync — ArgoCD übernimmt die temporär angelegten Ressourcen aus Schritt 4.

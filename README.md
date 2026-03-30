@@ -14,7 +14,7 @@ ocp-platform/               ← dieses Repo (Platform Team)
   cluster-config/           ← cluster-weite Konfiguration, von ArgoCD verwaltet
 
 ocp-workloads/              ← Workloads-Repo (Platform Team)
-  groups/                   ← Globale Gruppen-Definitionen (eine Datei pro Gruppe)
+  groups/                   ← Globale Gruppen-Definitionen (je Projekt ein Unterverzeichnis)
   charts/namespace-config/  ← Helm Chart für Namespace-Konfiguration
   apps/<project>/           ← je Projekt: AppProject + App-Referenzen
 
@@ -24,29 +24,57 @@ ocp-workloads/              ← Workloads-Repo (Platform Team)
 
 ---
 
+## ArgoCD RBAC
+
+Der OpenShift GitOps Operator setzt folgende Policy automatisch:
+
+```
+g, system:cluster-admins, role:admin
+g, cluster-admins, role:admin
+policy.default: role:readonly
+```
+
+Die Gruppe `cluster-admins` hat damit ohne weitere Konfiguration ArgoCD admin-Rechte.  
+Es ist **keine** manuelle RBAC-Konfiguration notwendig.
+
+---
+
 ## Sync-Flow
 
 ```
 platform-app  (Root App-of-Apps, Bootstrap)
-├── cluster-config  ──────────────→ cluster-config/          Wave -1
-│   ├── argocd/argocd-rbac-cm.yaml
+├── cluster-config  ──────────────→ cluster-config/                Wave -1
 │   ├── groups/cluster-admins.yaml
 │   ├── oauth/oauth.yaml
-│   └── rbac/argocd-cluster-admin.yaml
+│   └── rbac/
+│       ├── argocd-cluster-admin.yaml
+│       └── cluster-admins-cluster-admin.yaml
 │
-├── workloads-groups-app  ─────────→ ocp-workloads/groups/   Wave -1
-│   ├── project-a-admins.yaml
-│   └── project-a-developers.yaml
+├── workloads-groups-app  ─────────→ ocp-workloads/groups/         Wave -1
+│   ├── project-a/admins.yaml
+│   ├── project-a/developers.yaml
+│   ├── project-a/viewers.yaml
+│   ├── project-b/admins.yaml
+│   ├── project-b/developers.yaml
+│   └── project-b/viewers.yaml
 │
-└── workloads-app  ────────────────→ ocp-workloads/apps/     Wave 0
-    └── project-a/
-        ├── appproject.yaml                                  Wave -1
+└── workloads-app  ────────────────→ ocp-workloads/apps/           Wave 0
+    ├── project-a/
+    │   ├── appproject.yaml                                        Wave -1
+    │   ├── my-app/
+    │   │   ├── namespace-config-app.yaml                          Wave  0
+    │   │   └── my-app-app.yaml                                    Wave  1
+    │   └── your-app/
+    │       ├── namespace-config-app.yaml                          Wave  0
+    │       └── your-app-app.yaml                                  Wave  1
+    └── project-b/
+        ├── appproject.yaml                                        Wave -1
         ├── my-app/
-        │   ├── namespace-config-app.yaml                    Wave  0
-        │   └── my-app-app.yaml                              Wave  1
+        │   ├── namespace-config-app.yaml                          Wave  0
+        │   └── my-app-app.yaml                                    Wave  1
         └── your-app/
-            ├── namespace-config-app.yaml                    Wave  0
-            └── your-app-app.yaml                            Wave  1
+            ├── namespace-config-app.yaml                          Wave  0
+            └── your-app-app.yaml                                  Wave  1
 ```
 
 ---
@@ -60,7 +88,6 @@ ocp-platform/
 │   │   ├── namespace.yaml
 │   │   ├── operatorgroup.yaml
 │   │   └── subscription.yaml
-│   ├── argocd-rbac-cm.yaml    ← nur Bootstrap (danach via cluster-config verwaltet)
 │   ├── oauth.yaml             ← nur Bootstrap (danach via cluster-config verwaltet)
 │   ├── platform-project.yaml  AppProject "platform"
 │   ├── platform-app.yaml      Root App-of-Apps
@@ -70,14 +97,13 @@ ocp-platform/
 │   ├── workloads-groups-app.yaml     Wave -1 → ocp-workloads/groups/
 │   └── workloads-app.yaml            Wave  0 → ocp-workloads/apps/
 └── cluster-config/
-    ├── argocd/
-    │   └── argocd-rbac-cm.yaml
     ├── groups/
     │   └── cluster-admins.yaml
     ├── oauth/
     │   └── oauth.yaml
     └── rbac/
-        └── argocd-cluster-admin.yaml
+        ├── argocd-cluster-admin.yaml
+        └── cluster-admins-cluster-admin.yaml
 ```
 
 ---
@@ -86,12 +112,13 @@ ocp-platform/
 
 | Gruppe | Definiert in | Zweck |
 |---|---|---|
-| `cluster-admins` | `ocp-platform/cluster-config/groups/` | Platform-weite Admins |
-| `project-a-admins` | `ocp-workloads/groups/` | Admins für project-a Namespaces |
-| `project-a-developers` | `ocp-workloads/groups/` | Entwickler für project-a Namespaces |
+| `cluster-admins` | `ocp-platform/cluster-config/groups/` | Platform-weite Admins + ArgoCD admin |
+| `project-a-admins` | `ocp-workloads/groups/project-a/` | Admins für project-a Namespaces |
+| `project-a-developers` | `ocp-workloads/groups/project-a/` | Entwickler für project-a Namespaces |
+| `project-a-viewers` | `ocp-workloads/groups/project-a/` | Leser für project-a Namespaces |
 
 Gruppen sind **globale Ressourcen** — sie werden einmal definiert und in den jeweiligen  
-`values.yaml` der Apps unter `rbac.adminGroups` / `rbac.editGroups` referenziert.
+`values.yaml` der Apps unter `rbac.adminGroups` / `rbac.editGroups` / `rbac.viewGroups` referenziert.
 
 ---
 
