@@ -3,6 +3,10 @@ kind: Application
 metadata:
   name: platform-app
   namespace: openshift-gitops
+  annotations:
+    # platform-app verwaltet sich selbst — nach dem Bootstrap wird diese Datei
+    # von ArgoCD aus apps/platform-app.yaml aktualisiert (selfHeal: true).
+    # Änderungen nur hier vornehmen, nicht in bootstrap/platform-app.yaml.
 spec:
   project: platform
   source:

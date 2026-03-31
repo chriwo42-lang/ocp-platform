@@ -10,7 +10,7 @@ Verwaltet vom **Platform Team**.
 ```
 ocp-platform/               ← dieses Repo (Platform Team)
   bootstrap/                ← einmalig manuell ausführen
-  apps/                     ← Child-Apps, von ArgoCD verwaltet
+  apps/                     ← Child-Apps + platform-app selbst, von ArgoCD verwaltet
   cluster-config/           ← cluster-weite Konfiguration, von ArgoCD verwaltet
 
 ocp-workloads/              ← Workloads-Repo (Platform Team)
@@ -43,7 +43,8 @@ Es ist **keine** manuelle RBAC-Konfiguration notwendig.
 ## Sync-Flow
 
 ```
-platform-app  (Root App-of-Apps, Bootstrap)
+platform-app  (Root App-of-Apps — verwaltet sich selbst via apps/platform-app.yaml)
+├── platform-app.yaml  ────────────→ sich selbst                   (kein Wave)
 ├── cluster-config  ──────────────→ cluster-config/                Wave -1
 │   ├── oauth/oauth.yaml
 │   └── rbac/
@@ -93,10 +94,14 @@ ocp-platform/
 │   │   ├── namespace.yaml
 │   │   ├── operatorgroup.yaml
 │   │   └── subscription.yaml
-│   ├── platform-project.yaml      AppProject "platform" (Bootstrap)
-│   ├── platform-app.yaml          Root App-of-Apps (Bootstrap)
+│   ├── platform-project.yaml      AppProject "platform" (nur Bootstrap, nicht in Git verwaltet)
 │   └── README-bootstrap.md
-├── apps/
+│
+│   HINWEIS: platform-app.yaml liegt nicht mehr im bootstrap/ Ordner.
+│   Bootstrap-Befehl: oc apply -f apps/platform-app.yaml
+│
+├── apps/                          Von ArgoCD verwaltet (recurse: true)
+│   ├── platform-app.yaml          Root App-of-Apps (self-managed)
 │   ├── cluster-config-app.yaml    Wave -1 → cluster-config/
 │   └── workloads-app.yaml         Wave  0 → ocp-workloads/apps/
 └── cluster-config/

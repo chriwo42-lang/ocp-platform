@@ -83,15 +83,22 @@ oc whoami   # muss "admin" zurückgeben
 oc apply -f bootstrap\platform-project.yaml
 ```
 
+> `platform-project.yaml` bleibt dauerhaft in `bootstrap/` — das AppProject kann nicht
+> von der Application verwaltet werden die es selbst nutzt.
+
 ---
 
 ## Schritt 6 – Root App-of-Apps anlegen
 
 ```powershell
-oc apply -f bootstrap\platform-app.yaml
+oc apply -f apps\platform-app.yaml
 ```
 
 Ab hier übernimmt ArgoCD. Alle weiteren Änderungen erfolgen **ausschließlich über Git**.
+
+> `platform-app.yaml` liegt in `apps/` — nicht in `bootstrap/`. Sie wird einmalig manuell
+> angewendet und danach von ArgoCD selbst verwaltet (self-managed).
+> Änderungen an `platform-app` bitte in `apps/platform-app.yaml` vornehmen.
 
 ---
 
@@ -108,6 +115,7 @@ ArgoCD deployt `platform-app` und dessen Child-Apps automatisch.
 
 | Wave | Child-App | Warum diese Reihenfolge |
 |---|---|---|
+| — | `platform-app` | Verwaltet sich selbst, kein Wave nötig |
 | -1 | `cluster-config` | `argocd-cluster-admin` CRB muss existieren bevor `workloads-app` Ressourcen in anderen Namespaces anlegt |
 | 0 | `workloads-app` | Startet erst wenn `cluster-config` vollständig synced ist |
 
