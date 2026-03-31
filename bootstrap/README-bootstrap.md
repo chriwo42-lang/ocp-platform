@@ -25,15 +25,20 @@ oc rollout status deployment/openshift-gitops-server -n openshift-gitops --timeo
 
 ## Schritt 2 – HTPasswd Secret anlegen
 
-BCrypt-Hash generieren (Rounds 10): https://bcrypt-generator.com
+BCrypt-Hashes generieren (Rounds 10): https://bcrypt-generator.com
+
+Alle User in einem einzigen Secret anlegen:
 
 ```powershell
 oc create secret generic htpasswd-secret `
-  --from-literal=htpasswd='admin:$2a$10$HASH_HIER_EINSETZEN' `
+  --from-literal=htpasswd='admin:$2a$12$n2KLKFwn/Yvu6kHOMKwKa.OrEXChWJi8.uHz2q6SEV3lJspaxd98W
+developer:$2a$12$hlleQYCSvrfu98AfUQ1La.vW8sv2vc/ml1oxbcyNIamvxLNL4kjwG
+editor:$2a$12$pWRcY/JsRPmT0qWqdpdyMenPhCKdU7paeLzwrj5WD8HdnH7q6jSNC
+readonly:$2a$12$LqYGf7O7ZOqSWbYI7dOnE.znJzlwOhOHyxHHDCbpwB78fOsngmiLu' `
   -n openshift-config
 ```
 
-> Das Secret enthält ein Passwort – es wird **nicht in Git gespeichert**.
+> Das Secret enthält Passwörter – es wird **nicht in Git gespeichert**.
 
 ---
 
@@ -130,10 +135,9 @@ ArgoCD deployt `platform-app` und dessen Child-Apps automatisch.
 
 | Wave | Ressource | Warum diese Reihenfolge |
 |---|---|---|
-| -1 | Gruppen | Müssen vor RoleBindings existieren die sie referenzieren |
+| -1 | Teams (Gruppen) | Müssen vor RoleBindings existieren die sie referenzieren |
 | -1 | AppProjects | Müssen vor Applications existieren die sie referenzieren |
-| 0 | Namespace-Config Apps | Legen Namespace, Quota, NetPol und RoleBindings an |
-| 1 | App-of-Apps | Eigentliche Workloads deployen erst wenn Namespace existiert |
+| 0 | App-Config | Namespace, Quota, NetPol, RBAC + Application für App-Repo |
 
 ArgoCD UI aufrufen:
 
@@ -145,25 +149,27 @@ Login mit `admin` / `<dein-passwort>`.
 
 Folgende Apps müssen `Synced / Healthy` sein:
 
-| App | Quelle |
+| App | Beschreibung |
 |---|---|
-| `platform-app` | ocp-platform/apps/ |
-| `cluster-config` | ocp-platform/cluster-config/ |
-| `workloads-app` | ocp-workloads/apps/ |
-| `project-a-my-app-namespace` | ocp-workloads/charts/namespace-config |
-| `project-a-my-app` | my-app/helm |
-| `project-a-your-app-namespace` | ocp-workloads/charts/namespace-config |
-| `project-a-your-app` | your-app/helm |
-| `project-b-my-app-namespace` | ocp-workloads/charts/namespace-config |
-| `project-b-my-app` | my-app/helm |
-| `project-b-your-app-namespace` | ocp-workloads/charts/namespace-config |
-| `project-b-your-app` | your-app/helm |
+| `platform-app` | Root App-of-Apps |
+| `cluster-config` | OAuth, Gruppen, RBAC |
+| `workloads-app` | Alle Workload-Apps |
+| `project-a-appproject` | AppProject project-a |
+| `project-a-my-app-config` | Namespace + App (project-a/my-app) |
+| `project-a-your-app-config` | Namespace + App (project-a/your-app) |
+| `project-b-appproject` | AppProject project-b |
+| `project-b-my-app-config` | Namespace + App (project-b/my-app) |
+| `project-b-your-app-config` | Namespace + App (project-b/your-app) |
+| `project-a-my-app` | my-app Workload in project-a |
+| `project-a-your-app` | your-app Workload in project-a |
+| `project-b-my-app` | my-app Workload in project-b |
+| `project-b-your-app` | your-app Workload in project-b |
 
 ---
 
 ## Neuen User anlegen
 
-**1. Gruppe in Git pflegen** (`ocp-workloads/apps/groups/<project>/<rolle>.yaml`):
+**1. Gruppe in Git pflegen** (`ocp-workloads/apps/groups/<team>.yaml`):
 
 ```yaml
 users:
@@ -171,27 +177,29 @@ users:
 ```
 
 ```powershell
-git add . && git commit -m "feat(groups): add neuer-user"
+git add . && git commit -m "feat(groups): add neuer-user to team-x"
 git push
 ```
 
-**2. Passwort manuell im Secret ergänzen:**
+**2. Passwort direkt im Secret ergänzen** (kein Tempfile):
 
 ```powershell
-oc get secret htpasswd-secret -n openshift-config `
+# Bestehenden Inhalt lesen
+$existing = oc get secret htpasswd-secret -n openshift-config `
   -o jsonpath='{.data.htpasswd}' | `
-  [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) | `
-  Out-File -FilePath "$env:TEMP\htpasswd" -Encoding utf8NoBOM
+  [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_))
 
 # Hash generieren: https://bcrypt-generator.com (Rounds 10)
-Add-Content "$env:TEMP\htpasswd" 'neuer-user:$2a$10$HASH_HIER'
+# Zeile anhängen: neuer-user:$2a$10$HASH
+$combined = "$existing`nneuer-user:`$2a`$10`$HASH_HIER"
 
-oc create secret generic htpasswd-secret `
-  --from-file=htpasswd="$env:TEMP\htpasswd" `
-  -n openshift-config `
-  --dry-run=client -o yaml | oc apply -f -
+$encoded = [System.Convert]::ToBase64String(
+  [System.Text.Encoding]::UTF8.GetBytes($combined)
+)
 
-Remove-Item "$env:TEMP\htpasswd"
+oc patch secret htpasswd-secret -n openshift-config `
+  --type merge `
+  -p "{`"data`":{`"htpasswd`":`"$encoded`"}}"
 ```
 
 ---
@@ -204,7 +212,7 @@ Remove-Item "$env:TEMP\htpasswd"
 oc apply -f cluster-config\rbac\argocd-cluster-admin.yaml
 ```
 
-**OAuth funktioniert nicht — Hash prüfen:**
+**OAuth funktioniert nicht — Inhalt prüfen:**
 
 ```powershell
 oc get secret htpasswd-secret -n openshift-config `
