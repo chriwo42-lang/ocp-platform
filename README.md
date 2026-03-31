@@ -15,7 +15,7 @@ ocp-platform/               ← dieses Repo (Platform Team)
 
 ocp-workloads/              ← Workloads-Repo (Platform Team)
   apps/
-    groups/                 ← Globale Gruppen (je Projekt ein Unterverzeichnis)
+    groups/                 ← Team-Definitionen (eine Datei pro Team)
     <project>/              ← je Projekt: AppProject + App-Referenzen
   charts/namespace-config/  ← Helm Chart für Namespace-Konfiguration
 
@@ -54,12 +54,8 @@ platform-app  (Root App-of-Apps — verwaltet sich selbst via apps/platform-app.
 │
 └── workloads-app  ────────────────→ ocp-workloads/apps/           Wave  0
     ├── groups/
-    │   ├── project-a/admins.yaml                                  Wave -1
-    │   ├── project-a/developers.yaml                              Wave -1
-    │   ├── project-a/viewers.yaml                                 Wave -1
-    │   ├── project-b/admins.yaml                                  Wave -1
-    │   ├── project-b/developers.yaml                              Wave -1
-    │   └── project-b/viewers.yaml                                 Wave -1
+    │   ├── team-a.yaml                                            Wave -1
+    │   └── team-b.yaml                                            Wave -1
     ├── project-a/
     │   ├── appproject.yaml                                        Wave -1
     │   ├── my-app/
@@ -120,13 +116,15 @@ ocp-platform/
 
 | Gruppe | Definiert in | Zweck |
 |---|---|---|
-| `cluster-admins` | `cluster-config/rbac/groups/` | Platform-weite Admins + ArgoCD admin |
-| `project-a-admins` | `ocp-workloads/apps/groups/project-a/` | Admins für project-a Namespaces |
-| `project-a-developers` | `ocp-workloads/apps/groups/project-a/` | Entwickler für project-a Namespaces |
-| `project-a-viewers` | `ocp-workloads/apps/groups/project-a/` | Leser für project-a Namespaces |
+| `cluster-admins` | `ocp-platform/cluster-config/rbac/groups/` | Platform-weite Admins + ArgoCD admin |
+| `team-a` | `ocp-workloads/apps/groups/` | Entwickler-Team, Zuweisung je App in `values.yaml` |
+| `team-b` | `ocp-workloads/apps/groups/` | Entwickler-Team, Zuweisung je App in `values.yaml` |
 
-Gruppen sind **globale Ressourcen** — einmal definiert, in `values.yaml` der Apps referenziert  
-unter `rbac.adminGroups` / `rbac.editGroups` / `rbac.viewGroups`.
+Teams sind **projektunabhängig** — ein Team kann in verschiedenen Projekten unterschiedliche  
+Rollen haben (admin, edit, view). Die Zuweisung erfolgt in `values.yaml` je App.
+
+**ArgoCD AppProject-Rollen** werden ausschließlich von `cluster-admins` verwaltet —  
+Entwickler-Teams haben keinen direkten ArgoCD-Zugriff.
 
 ---
 
