@@ -1,11 +1,11 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
-  name: openshift-gitops-operator
-  namespace: openshift-gitops-operator
+  name: amq-streams
+  namespace: amq-streams
 spec:
   channel: stable
   installPlanApproval: Automatic
-  name: openshift-gitops-operator
+  name: amq-streams
   source: redhat-operators
   sourceNamespace: openshift-marketplace
